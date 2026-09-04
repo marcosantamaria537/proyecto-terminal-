@@ -12,18 +12,29 @@ Aplicación descriptiva para explorar recorridos de supervisión y faltas regist
 - Mapa de calor y coroplético cuando existen coordenadas o polígonos.
 - Tabla filtrada y descarga CSV con embarcaciones anonimizadas.
 - Resumen de calidad de datos.
-- Datos sintéticos automáticos para comprobar la interfaz sin usar información institucional.
+
 
 ## Ejecutar en Windows
 
-Abre PowerShell dentro de la carpeta del proyecto y ejecuta:
+Abre visual y dentro abre la carpeta donde descargaste el proyecto del proyecto y ejecuta en una terminal los siguientes comandos:
 
-```powershell
-py -3.11 -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-streamlit run app.py
+```terminal
+python --version
 ```
+```terminal
+python -m venv .venv
+```
+```terminal
+.\.venv\Scripts\Activate.ps1
+```
+```terminal
+python -m pip install -r requirements.txt
+```
+```terminal
+python -m streamlit run app.py
+```
+
+
 
 La aplicación se abrirá normalmente en `http://localhost:8501`.
 
