@@ -1,0 +1,77 @@
+:root {
+  --conanp-green: #006b4f;
+  --conanp-ink: #16352d;
+  --conanp-soft: #eef5f2;
+}
+
+.stApp {
+  background: linear-gradient(180deg, #f5faf8 0, #ffffff 280px);
+}
+
+[data-testid="stHeader"] {
+  background: transparent;
+}
+
+[data-testid="stSidebar"] {
+  background: #f0f6f3;
+  border-right: 1px solid #dce9e3;
+}
+
+h1, h2, h3 {
+  color: var(--conanp-ink);
+  letter-spacing: -0.025em;
+}
+
+.eyebrow {
+  margin: 0 0 .3rem;
+  color: var(--conanp-green);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.brand-mark {
+  margin-top: 1.15rem;
+  padding: .75rem 1rem;
+  border: 1px solid rgba(0, 107, 79, .25);
+  border-radius: .75rem;
+  color: var(--conanp-green);
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-align: center;
+  background: rgba(255,255,255,.75);
+}
+
+[data-testid="stMetric"] {
+  min-height: 112px;
+  padding: 1rem 1.1rem;
+  border: 1px solid #dce9e3;
+  border-radius: 14px;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 8px 24px rgba(15, 69, 54, .06);
+}
+
+[data-testid="stMetricValue"] {
+  color: var(--conanp-green);
+}
+
+[data-testid="stPlotlyChart"], [data-testid="stDataFrame"] {
+  overflow: hidden;
+  border: 1px solid #e1ebe7;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+  gap: .35rem;
+  margin-top: 1rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+  border-radius: 8px 8px 0 0;
+  padding-inline: 1rem;
+}
+
+@media (max-width: 700px) {
+  .brand-mark { display: none; }
+}

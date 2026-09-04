@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.streamlit/secrets.toml
+data/*.xlsx
+data/*.xls
+data/*.csv
+data/*.db
+data/*.sqlite*
+data/*.zip
+data/*.geojson
+!data/README.md
