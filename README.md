@@ -52,18 +52,6 @@ El proceso de carga normaliza mayúsculas, acentos y espacios. Reconoce, entre o
 | `km_recorridos` | `KM_RECORRIDOS`, `KILOMETRAJE`, `KM` |
 | coordenadas | `LATITUD`/`LONGITUD`, `LAT`/`LON` |
 
-Si los nombres reales son distintos, agrégalos en `ALIASES`, dentro de `src/data.py`.
-
-## Uso de la bodega SQLite
-
-La aplicación inspecciona las tablas y carga aquellas que contengan una columna de fecha reconocible. Si la bodega usa un esquema en estrella con claves sustitutas, conviene crear una vista SQL que reúna la tabla de hechos con las dimensiones y cargar esa vista como una fuente del dashboard.
-
-## Seguridad y despliegue
-
-- No subas las bases institucionales a GitHub ni a un despliegue público.
-- La tabla visible sustituye la embarcación por un hash estable y no exporta el nombre original.
-- Para activar una contraseña simple, copia `.streamlit/secrets.toml.example` como `.streamlit/secrets.toml` y cambia el valor.
-- Antes de usar Streamlit Community Cloud con información real, define el control de acceso autorizado por la CONANP y valida dónde se almacenan/procesan los datos.
 
 ## Validación recomendada
 
