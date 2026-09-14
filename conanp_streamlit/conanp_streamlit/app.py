@@ -213,4 +213,4 @@ with quality_tab:
             hide_index=True,
         )
 
-st.caption("Dashboard descriptivo para apoyar la planeación de recorridos. No realiza predicciones de zonas de riesgo.")
+st.caption("Dashboard descriptivo para apoyar la planeación de recorridos.")
