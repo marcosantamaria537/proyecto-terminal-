@@ -256,7 +256,6 @@ with quality_tab:
     st.dataframe(controls, use_container_width=True, hide_index=True)
 
 st.caption(
-    "Dashboard descriptivo para apoyar la supervisión ambiental. Los recorridos y "
-    "las supervisiones se muestran por separado porque no tienen una llave común."
+    "llevo 35h aqui ayuda."
 )
 
