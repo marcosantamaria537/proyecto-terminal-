@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import time
 
 import numpy as np
 import pandas as pd
@@ -84,16 +85,38 @@ def _anonymous_boat(value: object) -> str:
 
 
 def load_postgres_data(connection) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    try:
-        supervisions = connection.query(SUPERVISION_QUERY, ttl=0)
-        recorridos = connection.query(RECORRIDO_QUERY, ttl=0)
-        faults = connection.query(FAULT_DETAIL_QUERY, ttl=0)
-    except Exception as exc:
-        raise DatabaseLoadError(
-            "No fue posible consultar PostgreSQL. Verifica la conexión y vuelve a "
-            "ejecutar el cargador de datos."
-        ) from exc
+    ultimo_error = None
 
+    for intento in range(4):
+        try:
+            supervisions = connection.query(
+                SUPERVISION_QUERY,
+                ttl="10m",
+                show_spinner="Conectando con PostgreSQL..."
+            )
+            recorridos = connection.query(
+                RECORRIDO_QUERY,
+                ttl="10m",
+                show_spinner=False
+            )
+            faults = connection.query(
+                FAULT_DETAIL_QUERY,
+                ttl="10m",
+                show_spinner=False
+            )
+            break
+        except Exception as exc:
+            ultimo_error = exc
+            if intento == 3:
+                raise DatabaseLoadError(
+                    "No fue posible conectar con PostgreSQL después de varios intentos."
+                ) from ultimo_error
+            try:
+                connection.reset()
+            except Exception:
+                pass
+            time.sleep(4)
+            
     supervisions = _derived_time_columns(supervisions, "hora")
     recorridos = _derived_time_columns(recorridos, "hora_inicio")
     faults = _derived_time_columns(faults, "hora")
