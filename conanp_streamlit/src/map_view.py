@@ -5,7 +5,6 @@ import copy
 import folium
 import pandas as pd
 import streamlit as st
-from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 
 from src.data import normalize_name
@@ -38,7 +37,7 @@ def render_surveillance_map(data: pd.DataFrame, geojson: dict | None) -> None:
     faults = data.loc[data["es_falta"]]
     if geojson:
         prepared, label_key = _prepare_geojson(geojson)
-        polygon_counts = faults.groupby("poligono").size().rename("faltas").reset_index()
+        polygon_counts = faults.groupby("poligono")["num_faltas"].sum().rename("faltas").reset_index()
         polygon_counts["poligono_clave"] = polygon_counts["poligono"].map(normalize_name)
         folium.Choropleth(
             geo_data=prepared,
@@ -59,18 +58,21 @@ def render_surveillance_map(data: pd.DataFrame, geojson: dict | None) -> None:
                 tooltip=folium.GeoJsonTooltip(fields=[label_key], aliases=["Polígono:"]),
             ).add_to(map_object)
 
-    if not coordinates.empty:
-        heat_points = faults.dropna(subset=["latitud", "longitud"])[["latitud", "longitud"]].values.tolist()
-        if heat_points:
-            HeatMap(heat_points, radius=17, blur=13, min_opacity=0.25, name="Concentración de faltas").add_to(map_object)
-    elif not geojson:
-        st.warning("Para mostrar el mapa se requieren coordenadas (LATITUD y LONGITUD) o un archivo GeoJSON de polígonos.")
+    if not geojson:
+        st.warning(
+            "Carga el archivo GeoJSON o poligonos.zip para generar el mapa coroplético. "
+            "El color de cada polígono representará la cantidad de faltas registradas."
+        )
 
     folium.LayerControl(collapsed=False).add_to(map_object)
     st_folium(map_object, use_container_width=True, height=560, returned_objects=[])
 
-    counts = data.assign(faltas=data["es_falta"].astype(int)).groupby("poligono", as_index=False).agg(
-        recorridos=("recorrido_id", "nunique"), faltas=("faltas", "sum")
+    counts = data.groupby("poligono", as_index=False).agg(
+        supervisiones=("supervision_id", "nunique"),
+        supervisiones_con_falta=("es_falta", "sum"),
+        faltas=("num_faltas", "sum"),
     )
-    counts["tasa_infraccion"] = (counts["faltas"] / counts["recorridos"] * 100).round(1)
+    counts["porcentaje_con_falta"] = (
+        counts["supervisiones_con_falta"] / counts["supervisiones"] * 100
+    ).round(1)
     st.dataframe(counts.sort_values("faltas", ascending=False), width="stretch", hide_index=True)

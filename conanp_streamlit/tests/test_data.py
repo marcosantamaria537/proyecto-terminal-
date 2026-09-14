@@ -19,10 +19,12 @@ class DashboardDataTests(unittest.TestCase):
         )
         data = standardize_dataframe(raw)
         self.assertTrue(data["fecha"].notna().all())
-        self.assertEqual(
-            calculate_kpis(data),
-            {"faltas": 1, "recorridos": 2, "tasa": 50.0, "kilometros": 25.0},
-        )
+        self.assertEqual(calculate_kpis(data), {
+            "faltas": 1,
+            "recorridos": 2,
+            "porcentaje_con_falta": 50.0,
+            "kilometros": 25.0,
+        })
 
     def test_filters_apply_to_all_rows(self):
         raw = pd.DataFrame(
