@@ -1,0 +1,242 @@
+{
+  "type": "FeatureCollection",
+  "name": "poligonos_marinos_artificiales_cancun",
+  "metadata": {
+    "descripcion": "Límites principales de los tres polígonos del Parque Nacional, reconstruidos a partir de las coordenadas del Decreto de 19 de julio de 1996 y contrastados con la cartografía proporcionada.",
+    "crs": "EPSG:4326",
+    "fecha_actualizacion": "2026-09-16",
+    "fuente": "Decreto de creación del Parque Marino Nacional Costa Occidental de Isla Mujeres, Punta Cancún y Punta Nizuc, 19 de julio de 1996.",
+    "advertencia": "Los tramos descritos por el Decreto como límite exterior de la Zona Federal Marítimo Terrestre se representan mediante una línea costera simplificada; los vértices numerados conservan las coordenadas publicadas."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poligono_1_isla_mujeres",
+        "sector_id": "isla_mujeres_occidental",
+        "poligono": "POLIGONO 1",
+        "sector": "Costa occidental de Isla Mujeres",
+        "zona": "Límite general",
+        "superficie_declarada_ha": 2795.4825,
+        "numero_vertices_decreto": 12,
+        "fuente_coordenadas": "Decreto 19-07-1996",
+        "es_artificial": false,
+        "distancia_min_m": null,
+        "distancia_max_m": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -86.716389,
+              21.208889
+            ],
+            [
+              -86.708056,
+              21.208889
+            ],
+            [
+              -86.708056,
+              21.192222
+            ],
+            [
+              -86.733056,
+              21.192222
+            ],
+            [
+              -86.733056,
+              21.196667
+            ],
+            [
+              -86.773333,
+              21.210278
+            ],
+            [
+              -86.773333,
+              21.267778
+            ],
+            [
+              -86.750556,
+              21.267778
+            ],
+            [
+              -86.755278,
+              21.253611
+            ],
+            [
+              -86.744722,
+              21.241944
+            ],
+            [
+              -86.742778,
+              21.238056
+            ],
+            [
+              -86.743333,
+              21.236667
+            ],
+            [
+              -86.7325,
+              21.23
+            ],
+            [
+              -86.7285,
+              21.22
+            ],
+            [
+              -86.7235,
+              21.21
+            ],
+            [
+              -86.7155,
+              21.201
+            ],
+            [
+              -86.7095,
+              21.198
+            ],
+            [
+              -86.7055,
+              21.202
+            ],
+            [
+              -86.7045,
+              21.207
+            ],
+            [
+              -86.716389,
+              21.208889
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poligono_2_punta_cancun",
+        "sector_id": "punta_cancun",
+        "poligono": "POLIGONO 2",
+        "sector": "Punta Cancún",
+        "zona": "Límite general",
+        "superficie_declarada_ha": 3301.2875,
+        "numero_vertices_decreto": 5,
+        "fuente_coordenadas": "Decreto 19-07-1996",
+        "es_artificial": false,
+        "distancia_min_m": null,
+        "distancia_max_m": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -86.753889,
+              21.136944
+            ],
+            [
+              -86.753889,
+              21.178889
+            ],
+            [
+              -86.709722,
+              21.178889
+            ],
+            [
+              -86.709722,
+              21.111667
+            ],
+            [
+              -86.758333,
+              21.111944
+            ],
+            [
+              -86.7557,
+              21.119
+            ],
+            [
+              -86.7514,
+              21.125
+            ],
+            [
+              -86.7464,
+              21.131
+            ],
+            [
+              -86.7413,
+              21.136
+            ],
+            [
+              -86.7368,
+              21.1384
+            ],
+            [
+              -86.733,
+              21.1392
+            ],
+            [
+              -86.753889,
+              21.136944
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "poligono_3_punta_nizuc",
+        "sector_id": "punta_nizuc",
+        "poligono": "POLIGONO 3",
+        "sector": "Punta Nizuc",
+        "zona": "Límite general",
+        "superficie_declarada_ha": 2576.29,
+        "numero_vertices_decreto": 4,
+        "fuente_coordenadas": "Decreto 19-07-1996",
+        "es_artificial": false,
+        "distancia_min_m": null,
+        "distancia_max_m": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -86.781389,
+              21.04
+            ],
+            [
+              -86.750556,
+              21.04
+            ],
+            [
+              -86.7775,
+              20.986667
+            ],
+            [
+              -86.821944,
+              21
+            ],
+            [
+              -86.821,
+              21.008
+            ],
+            [
+              -86.808,
+              21.022
+            ],
+            [
+              -86.792,
+              21.036
+            ],
+            [
+              -86.781389,
+              21.04
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

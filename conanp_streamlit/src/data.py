@@ -248,13 +248,17 @@ def quality_summary(data: pd.DataFrame) -> dict:
         if column not in data:
             continue
         missing = data[column].isna() | data[column].astype(str).str.lower().isin(
-            ["", "nan", "sin identificar", "sin clasificación", "sin registro"]
+            ["", "nan", "sin identificar", "sin especificar", "sin clasificación", "sin registro"]
         )
         rows.append({"campo": column, "valores_faltantes": int(missing.sum()), "porcentaje": round(missing.mean() * 100, 1)})
     return {
         "registros": len(data),
         "fechas_validas_pct": float(data["fecha"].notna().mean() * 100),
-        "poligonos_identificados_pct": float((data["poligono"] != "Sin identificar").mean() * 100),
+        "poligonos_identificados_pct": float(
+            (~data["poligono"].astype(str).str.strip().str.lower().isin(
+                ["", "no", "sin identificar", "sin especificar", "nan"]
+            )).mean() * 100
+        ),
         "faltantes": pd.DataFrame(rows).sort_values("porcentaje", ascending=False),
     }
 
