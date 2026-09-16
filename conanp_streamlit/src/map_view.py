@@ -31,7 +31,10 @@ def _prepare_geojson(
     selected_key = None
 
     for feature in prepared.get("features", []):
-        properties = feature.setdefault("properties", {})
+        properties = feature.setdefault(
+            "properties",
+            {},
+        )
 
         normalized_keys = {
             normalize_name(str(key)): key
@@ -49,8 +52,16 @@ def _prepare_geojson(
 
         if source_key:
             selected_key = source_key
-            properties["__poligono_normalizado"] = normalize_name(
-                str(properties.get(source_key, ""))
+
+            properties[
+                "__poligono_normalizado"
+            ] = normalize_name(
+                str(
+                    properties.get(
+                        source_key,
+                        "",
+                    )
+                )
             )
 
     return prepared, selected_key
@@ -64,15 +75,26 @@ def _iterate_coordinates(
     if (
         isinstance(coordinates, list)
         and len(coordinates) >= 2
-        and isinstance(coordinates[0], (int, float))
-        and isinstance(coordinates[1], (int, float))
+        and isinstance(
+            coordinates[0],
+            (int, float),
+        )
+        and isinstance(
+            coordinates[1],
+            (int, float),
+        )
     ):
-        yield float(coordinates[0]), float(coordinates[1])
+        yield (
+            float(coordinates[0]),
+            float(coordinates[1]),
+        )
         return
 
     if isinstance(coordinates, list):
         for item in coordinates:
-            yield from _iterate_coordinates(item)
+            yield from _iterate_coordinates(
+                item
+            )
 
 
 def _fit_geojson_bounds(
@@ -81,25 +103,102 @@ def _fit_geojson_bounds(
 ) -> None:
     """Ajusta la vista para mostrar todos los polígonos."""
 
-    points: list[tuple[float, float]] = []
+    points: list[
+        tuple[float, float]
+    ] = []
 
-    for feature in geojson.get("features", []):
-        geometry = feature.get("geometry") or {}
-        coordinates = geometry.get("coordinates") or []
-        points.extend(_iterate_coordinates(coordinates))
+    for feature in geojson.get(
+        "features",
+        [],
+    ):
+        geometry = (
+            feature.get("geometry")
+            or {}
+        )
+
+        coordinates = (
+            geometry.get("coordinates")
+            or []
+        )
+
+        points.extend(
+            _iterate_coordinates(
+                coordinates
+            )
+        )
 
     if not points:
         return
 
-    longitudes = [point[0] for point in points]
-    latitudes = [point[1] for point in points]
+    longitudes = [
+        point[0]
+        for point in points
+    ]
+
+    latitudes = [
+        point[1]
+        for point in points
+    ]
 
     map_object.fit_bounds(
         [
-            [min(latitudes), min(longitudes)],
-            [max(latitudes), max(longitudes)],
+            [
+                min(latitudes),
+                min(longitudes),
+            ],
+            [
+                max(latitudes),
+                max(longitudes),
+            ],
         ]
     )
+
+
+def _prepare_polygon_counts(
+    faults: pd.DataFrame,
+) -> pd.DataFrame:
+    """Calcula faltas por polígono usando tipos compatibles con Folium."""
+
+    if faults.empty:
+        return pd.DataFrame(
+            columns=[
+                "poligono_clave",
+                "faltas",
+            ]
+        )
+
+    polygon_counts = (
+        faults.groupby(
+            "poligono",
+            as_index=False,
+        )["num_faltas"]
+        .sum()
+        .rename(
+            columns={
+                "num_faltas": "faltas"
+            }
+        )
+    )
+
+    polygon_counts["faltas"] = (
+        pd.to_numeric(
+            polygon_counts["faltas"],
+            errors="coerce",
+        )
+        .fillna(0)
+        .astype(float)
+    )
+
+    polygon_counts[
+        "poligono_clave"
+    ] = (
+        polygon_counts["poligono"]
+        .fillna("")
+        .astype(str)
+        .map(normalize_name)
+    )
+
+    return polygon_counts
 
 
 def render_surveillance_map(
@@ -109,16 +208,30 @@ def render_surveillance_map(
     """Construye el mapa coroplético de supervisiones."""
 
     coordinates = data.dropna(
-        subset=["latitud", "longitud"]
+        subset=[
+            "latitud",
+            "longitud",
+        ]
     )
 
     if not coordinates.empty:
         center = [
-            float(coordinates["latitud"].median()),
-            float(coordinates["longitud"].median()),
+            float(
+                coordinates[
+                    "latitud"
+                ].median()
+            ),
+            float(
+                coordinates[
+                    "longitud"
+                ].median()
+            ),
         ]
     else:
-        center = [21.135, -86.76]
+        center = [
+            21.135,
+            -86.76,
+        ]
 
     map_object = folium.Map(
         location=center,
@@ -127,12 +240,20 @@ def render_surveillance_map(
         control_scale=True,
     )
 
-    faults = data.loc[data["es_falta"]].copy()
+    faults = data.loc[
+        data["es_falta"].fillna(False)
+    ].copy()
 
     if geojson:
-        prepared, label_key = _prepare_geojson(geojson)
+        (
+            prepared,
+            label_key,
+        ) = _prepare_geojson(
+            geojson
+        )
 
-        # Capa base para garantizar que los polígonos sean visibles.
+        # Capa base para que los polígonos
+        # permanezcan visibles aunque no tengan faltas.
         folium.GeoJson(
             prepared,
             name="Zonas marinas",
@@ -145,24 +266,19 @@ def render_surveillance_map(
         ).add_to(map_object)
 
         polygon_counts = (
-            faults.groupby(
-                "poligono",
-                as_index=False,
-            )["num_faltas"]
-            .sum()
-            .rename(
-                columns={"num_faltas": "faltas"}
+            _prepare_polygon_counts(
+                faults
             )
         )
 
-        polygon_counts["poligono_clave"] = (
-            polygon_counts["poligono"]
-            .astype(str)
-            .map(normalize_name)
-        )
-
-        # Solo genera la capa coroplética cuando existen faltas.
-        if not polygon_counts.empty:
+        # Crea la capa coroplética únicamente
+        # cuando existen faltas mayores que cero.
+        if (
+            not polygon_counts.empty
+            and polygon_counts[
+                "faltas"
+            ].sum() > 0
+        ):
             folium.Choropleth(
                 geo_data=prepared,
                 data=polygon_counts,
@@ -180,15 +296,21 @@ def render_surveillance_map(
                 line_weight=2,
                 nan_fill_color="#70C5E8",
                 nan_fill_opacity=0.48,
-                legend_name="Faltas registradas",
-                name="Faltas por polígono",
+                legend_name=(
+                    "Faltas registradas"
+                ),
+                name=(
+                    "Faltas por polígono"
+                ),
             ).add_to(map_object)
 
         if label_key:
             folium.GeoJson(
                 prepared,
-                name="Información de las zonas",
-                style_futoolnction=lambda _: {
+                name=(
+                    "Información de las zonas"
+                ),
+                style_function=lambda _: {
                     "fillOpacity": 0,
                     "color": "#174A5B",
                     "weight": 2,
@@ -200,9 +322,9 @@ def render_surveillance_map(
                 },
                 tooltip=folium.GeoJsonTooltip(
                     fields=[
-                          "poligono",
-                          "sector",
-                          "superficie_declarada_ha",
+                        "poligono",
+                        "sector",
+                        "superficie_declarada_ha",
                     ],
                     aliases=[
                         "Polígono:",
@@ -221,8 +343,8 @@ def render_surveillance_map(
 
     else:
         st.warning(
-            "No se encontró el archivo GeoJSON de los "
-            "polígonos marinos."
+            "No se encontró el archivo "
+            "GeoJSON de los polígonos marinos."
         )
 
     folium.LayerControl(
@@ -254,11 +376,44 @@ def render_surveillance_map(
         ),
     )
 
-    counts["porcentaje_con_falta"] = (
-        counts["supervisiones_con_falta"]
-        / counts["supervisiones"]
-        * 100
-    ).round(1)
+    counts["supervisiones"] = (
+        pd.to_numeric(
+            counts["supervisiones"],
+            errors="coerce",
+        ).fillna(0)
+    )
+
+    counts[
+        "supervisiones_con_falta"
+    ] = pd.to_numeric(
+        counts[
+            "supervisiones_con_falta"
+        ],
+        errors="coerce",
+    ).fillna(0)
+
+    counts["faltas"] = (
+        pd.to_numeric(
+            counts["faltas"],
+            errors="coerce",
+        ).fillna(0)
+    )
+
+    counts[
+        "porcentaje_con_falta"
+    ] = (
+        counts[
+            "supervisiones_con_falta"
+        ]
+        .div(
+            counts[
+                "supervisiones"
+            ].replace(0, pd.NA)
+        )
+        .mul(100)
+        .fillna(0)
+        .round(1)
+    )
 
     st.dataframe(
         counts.sort_values(
