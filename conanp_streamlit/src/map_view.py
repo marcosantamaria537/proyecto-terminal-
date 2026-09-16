@@ -188,7 +188,7 @@ def render_surveillance_map(
             folium.GeoJson(
                 prepared,
                 name="Información de las zonas",
-                style_function=lambda _: {
+                style_futoolnction=lambda _: {
                     "fillOpacity": 0,
                     "color": "#174A5B",
                     "weight": 2,
@@ -200,16 +200,14 @@ def render_surveillance_map(
                 },
                 tooltip=folium.GeoJsonTooltip(
                     fields=[
-                        "sector",
-                        "zona",
-                        "distancia_min_m",
-                        "distancia_max_m",
+                          "poligono",
+                          "sector",
+                          "superficie_declarada_ha",
                     ],
                     aliases=[
+                        "Polígono:",
                         "Sector:",
-                        "Zona:",
-                        "Distancia inicial (m):",
-                        "Distancia final (m):",
+                        "Superficie oficial (ha):",
                     ],
                     localize=True,
                     sticky=True,
