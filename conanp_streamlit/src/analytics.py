@@ -306,3 +306,280 @@ def build_measure_chart(data: pd.DataFrame) -> go.Figure:
     fig.update_traces(textposition="inside", textinfo="percent", hovertemplate="%{label}<br>%{value} (%{percent})<extra></extra>")
     fig.update_layout(showlegend=True, legend={"orientation": "h", "y": -0.08})
     return _style(fig, "Medidas tomadas")
+
+def build_recurrence_chart(
+    data: pd.DataFrame,
+) -> go.Figure:
+    """
+    Muestra las embarcaciones que registraron faltas
+    en dos o más fechas diferentes.
+    """
+
+    figure = go.Figure()
+
+    if data.empty:
+        figure.add_annotation(
+            text="No hay supervisiones en el periodo seleccionado",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        figure.update_layout(
+            title="Embarcaciones con mayor reincidencia",
+        )
+
+        return figure
+
+    # Buscar la columna que identifica a la embarcación.
+    identifier_column = next(
+        (
+            column
+            for column in [
+                "embarcacion_anonima",
+                "matricula",
+                "embarcacion",
+            ]
+            if column in data.columns
+        ),
+        None,
+    )
+
+    if identifier_column is None:
+        figure.add_annotation(
+            text=(
+                "No se encontró una columna para identificar "
+                "las embarcaciones"
+            ),
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        figure.update_layout(
+            title="Embarcaciones con mayor reincidencia",
+        )
+
+        return figure
+
+    faults = data.copy()
+
+    # Conservar únicamente supervisiones con falta.
+    if "es_falta" in faults.columns:
+        faults = faults[
+            faults["es_falta"].fillna(False)
+        ]
+
+    faults["fecha"] = pd.to_datetime(
+        faults["fecha"],
+        errors="coerce",
+    )
+
+    faults["num_faltas"] = pd.to_numeric(
+        faults["num_faltas"],
+        errors="coerce",
+    ).fillna(0)
+
+    # Normalizar el identificador de la embarcación.
+    faults["embarcacion_id"] = (
+        faults[identifier_column]
+        .astype(str)
+        .str.replace("\u00a0", " ", regex=False)
+        .str.strip()
+        .str.upper()
+        .str.replace(
+            r"\s+",
+            " ",
+            regex=True,
+        )
+    )
+
+    invalid_identifiers = {
+        "",
+        "NAN",
+        "NONE",
+        "N/A",
+        "NA",
+        "SIN DATO",
+        "SIN DATOS",
+        "NO IDENTIFICADA",
+        "NO IDENTIFICADO",
+        "DESCONOCIDA",
+        "DESCONOCIDO",
+    }
+
+    faults = faults[
+        ~faults["embarcacion_id"].isin(
+            invalid_identifiers
+        )
+    ].dropna(
+        subset=["fecha"]
+    )
+
+    if faults.empty:
+        figure.add_annotation(
+            text=(
+                "No hay embarcaciones identificadas "
+                "con faltas en este periodo"
+            ),
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        figure.update_layout(
+            title="Embarcaciones con mayor reincidencia",
+        )
+
+        return figure
+
+    faults["fecha_dia"] = (
+        faults["fecha"].dt.normalize()
+    )
+
+    recurrence = (
+        faults.groupby(
+            "embarcacion_id",
+            as_index=False,
+        )
+        .agg(
+            fechas_con_falta=(
+                "fecha_dia",
+                "nunique",
+            ),
+            registros_con_falta=(
+                "supervision_id",
+                "nunique",
+            ),
+            incidencias=(
+                "num_faltas",
+                "sum",
+            ),
+            ultima_fecha=(
+                "fecha",
+                "max",
+            ),
+        )
+    )
+
+    # Una embarcación es reincidente cuando aparece
+    # con faltas en dos o más fechas distintas.
+    recurrence = recurrence[
+        recurrence["fechas_con_falta"] >= 2
+    ]
+
+    if recurrence.empty:
+        figure.add_annotation(
+            text=(
+                "No se encontraron embarcaciones reincidentes "
+                "en el periodo seleccionado"
+            ),
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        figure.update_layout(
+            title="Embarcaciones con mayor reincidencia",
+            xaxis={"visible": False},
+            yaxis={"visible": False},
+        )
+
+        return figure
+
+    # Mostrar las diez embarcaciones con mayor reincidencia.
+    recurrence = (
+        recurrence.sort_values(
+            [
+                "fechas_con_falta",
+                "incidencias",
+            ],
+            ascending=False,
+        )
+        .head(10)
+        .sort_values(
+            "fechas_con_falta",
+            ascending=True,
+        )
+    )
+
+    recurrence["ultima_fecha_texto"] = (
+        recurrence["ultima_fecha"]
+        .dt.strftime("%d/%m/%Y")
+    )
+
+    recurrence["nivel"] = recurrence[
+        "fechas_con_falta"
+    ].apply(
+        lambda value: (
+            "Alta reincidencia"
+            if value >= 4
+            else "Reincidencia"
+        )
+    )
+
+    colors = recurrence["nivel"].map(
+        {
+            "Reincidencia": "#D9A321",
+            "Alta reincidencia": "#C44E52",
+        }
+    )
+
+    custom_data = recurrence[
+        [
+            "registros_con_falta",
+            "incidencias",
+            "ultima_fecha_texto",
+            "nivel",
+        ]
+    ].to_numpy()
+
+    figure.add_trace(
+        go.Bar(
+            x=recurrence["fechas_con_falta"],
+            y=recurrence["embarcacion_id"],
+            orientation="h",
+            marker_color=colors,
+            text=recurrence["fechas_con_falta"],
+            textposition="outside",
+            customdata=custom_data,
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "Fechas distintas con falta: %{x}<br>"
+                "Supervisiones con falta: %{customdata[0]}<br>"
+                "Incidencias registradas: %{customdata[1]}<br>"
+                "Última fecha: %{customdata[2]}<br>"
+                "Clasificación: %{customdata[3]}"
+                "<extra></extra>"
+            ),
+        )
+    )
+
+    figure.update_layout(
+        title="Embarcaciones con mayor reincidencia",
+        xaxis={
+            "title": "Fechas distintas con falta",
+            "rangemode": "tozero",
+            "dtick": 1,
+        },
+        yaxis={
+            "title": "",
+        },
+        showlegend=False,
+        margin={
+            "l": 150,
+            "r": 40,
+            "t": 60,
+            "b": 50,
+        },
+    )
+
+    return figure

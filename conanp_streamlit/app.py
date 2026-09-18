@@ -8,10 +8,10 @@ import pandas as pd
 import streamlit as st
 
 from src.analytics import (
-    build_day_hour_heatmap,
     build_fault_type_chart,
     build_measure_chart,
     build_monthly_trend,
+    build_recurrence_chart,
     calculate_kpis,
 )
 from src.data import load_geojson_bytes, normalize_name, quality_summary
@@ -508,13 +508,13 @@ with overview_tab:
             use_container_width=True,
         )
 
-    left, right = st.columns(
+        left, right = st.columns(
         [1.35, 1]
     )
 
     with left:
         st.plotly_chart(
-            build_day_hour_heatmap(
+            build_recurrence_chart(
                 filtered_supervisions
             ),
             use_container_width=True,
