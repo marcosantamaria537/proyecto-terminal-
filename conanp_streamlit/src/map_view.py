@@ -158,7 +158,6 @@ def _prepare_polygon_counts(
     faults: pd.DataFrame,
 ) -> pd.DataFrame:
     """Calcula faltas por polígono usando tipos compatibles con Folium."""
-
     if faults.empty:
         return pd.DataFrame(
             columns=[
@@ -166,7 +165,6 @@ def _prepare_polygon_counts(
                 "faltas",
             ]
         )
-
     polygon_counts = (
         faults.groupby(
             "poligono",
@@ -179,7 +177,6 @@ def _prepare_polygon_counts(
             }
         )
     )
-
     polygon_counts["faltas"] = (
         pd.to_numeric(
             polygon_counts["faltas"],
@@ -188,7 +185,6 @@ def _prepare_polygon_counts(
         .fillna(0)
         .astype(float)
     )
-
     polygon_counts[
         "poligono_clave"
     ] = (
@@ -270,6 +266,29 @@ def render_surveillance_map(
                 faults
             )
         )
+        faults_by_polygon = dict(
+            zip(
+                polygon_counts["poligono_clave"],
+                polygon_counts["faltas"],
+            )
+        )
+
+        for feature in prepared.get("features", []):
+            properties = feature.setdefault("properties", {})
+
+            polygon_key = properties.get(
+                "__poligono_normalizado",
+                "",
+            )
+
+            fault_count = faults_by_polygon.get(
+                polygon_key,
+                0,
+            )
+
+            properties["faltas_registradas"] = int(
+                round(float(fault_count))
+            )
 
         # Crea la capa coroplética únicamente
         # cuando existen faltas mayores que cero.
@@ -321,15 +340,17 @@ def render_surveillance_map(
                     "weight": 4,
                 },
                 tooltip=folium.GeoJsonTooltip(
-                    fields=[
+                                        fields=[
                         "poligono",
                         "sector",
                         "superficie_declarada_ha",
+                        "faltas_registradas",
                     ],
                     aliases=[
                         "Polígono:",
                         "Sector:",
                         "Superficie oficial (ha):",
+                        "Faltas registradas:",
                     ],
                     localize=True,
                     sticky=True,
