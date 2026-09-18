@@ -14,7 +14,7 @@ from src.analytics import (
     build_monthly_trend,
     calculate_kpis,
 )
-from src.data import load_geojson_bytes, quality_summary
+from src.data import load_geojson_bytes, normalize_name, quality_summary
 from src.map_view import render_surveillance_map
 from src.postgres_data import (
     DatabaseLoadError,
@@ -120,7 +120,22 @@ def cached_default_geojson_load() -> dict | None:
 
     except (OSError, json.JSONDecodeError):
         return None
+def clean_polygon_label(value: object) -> str:
+    """Limpia el nombre visible del polígono."""
+    if pd.isna(value):
+        return ""
 
+    return " ".join(
+        str(value)
+        .replace("\u00a0", " ")
+        .strip()
+        .split()
+    ).upper()
+
+
+def polygon_key(value: object) -> str:
+    """Genera una clave común para comparar nombres."""
+    return normalize_name(clean_polygon_label(value))
 
 def filter_period_and_polygon(
     data: pd.DataFrame,
@@ -129,24 +144,25 @@ def filter_period_and_polygon(
     polygons: list[str],
 ) -> pd.DataFrame:
     start = pd.Timestamp(start_date)
-
     end = (
         pd.Timestamp(end_date)
         + pd.Timedelta(days=1)
         - pd.Timedelta(microseconds=1)
     )
 
-    mask = data["fecha"].between(
-        start,
-        end,
-    )
+    mask = data["fecha"].between(start, end)
 
     if polygons:
-        mask &= (
-            data["poligono"]
-            .astype(str)
-            .isin(polygons)
+        selected_keys = {
+            polygon_key(polygon)
+            for polygon in polygons
+        }
+
+        data_polygon_keys = data["poligono"].map(
+            polygon_key
         )
+
+        mask &= data_polygon_keys.isin(selected_keys)
 
     return data.loc[mask].copy()
 
@@ -285,17 +301,29 @@ with st.sidebar:
             else min_date
         )
 
+        polygon_values = pd.concat(
+        [
+            supervisions["poligono"],
+            recorridos["poligono"],
+        ],
+        ignore_index=True,
+    ).dropna()
+
+    polygon_labels: dict[str, str] = {}
+
+    for value in polygon_values:
+        label = clean_polygon_label(value)
+        key = polygon_key(value)
+
+        if (
+            label
+            and key
+            and key not in polygon_labels
+        ):
+            polygon_labels[key] = label
+
     polygon_options = sorted(
-        set(
-            supervisions["poligono"]
-            .dropna()
-            .astype(str)
-        )
-        | set(
-            recorridos["poligono"]
-            .dropna()
-            .astype(str)
-        )
+        polygon_labels.values()
     )
 
     selected_polygons = st.multiselect(
