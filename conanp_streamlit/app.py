@@ -293,7 +293,6 @@ with st.sidebar:
         and len(selected_dates) == 2
     ):
         start_date, end_date = selected_dates
-
     else:
         start_date = end_date = (
             selected_dates
@@ -301,7 +300,8 @@ with st.sidebar:
             else min_date
         )
 
-        polygon_values = pd.concat(
+    # Obtener todos los nombres de polígonos.
+    polygon_values = pd.concat(
         [
             supervisions["poligono"],
             recorridos["poligono"],
@@ -309,6 +309,8 @@ with st.sidebar:
         ignore_index=True,
     ).dropna()
 
+    # Eliminar nombres repetidos aunque tengan
+    # espacios, acentos o mayúsculas diferentes.
     polygon_labels: dict[str, str] = {}
 
     for value in polygon_values:
