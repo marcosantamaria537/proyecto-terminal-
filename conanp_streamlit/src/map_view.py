@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import re
 import copy
 from typing import Iterator
 
@@ -20,7 +20,31 @@ POLYGON_KEYS = [
     "anp",
     "subzona",
 ]
+def _polygon_group_key(value: object) -> str:
+    """Convierte las variantes de nombres a POLIGONO 1, 2 o 3."""
 
+    normalized = normalize_name(str(value or ""))
+
+    if (
+        re.search(r"\bpoligono\s*1\b", normalized)
+        or "isla mujeres" in normalized
+    ):
+        return "poligono 1"
+
+    if (
+        re.search(r"\bpoligono\s*2\b", normalized)
+        or "punta cancun" in normalized
+    ):
+        return "poligono 2"
+
+    if (
+        re.search(r"\bpoligono\s*3\b", normalized)
+        or "punta nizuc" in normalized
+        or "nizuc" in normalized
+    ):
+        return "poligono 3"
+
+    return normalized
 
 def _prepare_geojson(
     geojson: dict,
@@ -53,16 +77,9 @@ def _prepare_geojson(
         if source_key:
             selected_key = source_key
 
-            properties[
-                "__poligono_normalizado"
-            ] = normalize_name(
-                str(
-                    properties.get(
-                        source_key,
-                        "",
-                    )
-                )
-            )
+        properties["__poligono_normalizado"] = _polygon_group_key(
+    properties.get(source_key, "")
+)
 
     return prepared, selected_key
 
@@ -185,15 +202,18 @@ def _prepare_polygon_counts(
         .fillna(0)
         .astype(float)
     )
-    polygon_counts[
-        "poligono_clave"
-    ] = (
-        polygon_counts["poligono"]
-        .fillna("")
-        .astype(str)
-        .map(normalize_name)
-    )
-
+    polygon_counts["poligono_clave"] = (
+    polygon_counts["poligono"]
+    .fillna("")
+    .map(_polygon_group_key)
+)
+    polygon_counts = (
+    polygon_counts.groupby(
+        "poligono_clave",
+        as_index=False,
+    )["faltas"]
+    .sum()
+)
     return polygon_counts
 
 
