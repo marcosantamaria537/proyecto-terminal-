@@ -284,8 +284,8 @@ def build_fault_type_chart(data: pd.DataFrame) -> go.Figure:
     fig.update_yaxes(title=None)
     return _style(fig, "Faltas por categoría")
 
-
-def build_day_hour_heatmap(data: pd.DataFrame) -> go.Figure:
+################################################################### FUERA DE FUNCIONAMIENTO ###################################
+def build_day_hour_heatmap(data: pd.DataFrame) -> go.Figure: 
     order = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     faults = data.loc[data["es_falta"]]
     matrix = faults.pivot_table(index="dia_semana", columns="hora_num", values="num_faltas", aggfunc="sum", fill_value=0)
@@ -299,6 +299,7 @@ def build_day_hour_heatmap(data: pd.DataFrame) -> go.Figure:
     fig.update_yaxes(title=None)
     return _style(fig, "Concentración por día y hora")
 
+#########################################################################################################################
 
 def build_measure_chart(data: pd.DataFrame) -> go.Figure:
     measures = data.loc[data["es_falta"], "medida_tomada"].fillna("Sin registro").value_counts().head(6).rename_axis("medida").reset_index(name="registros")
