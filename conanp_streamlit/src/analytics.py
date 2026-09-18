@@ -330,8 +330,33 @@ def build_recurrence_chart(
         figure.update_layout(
             title="Embarcaciones con mayor reincidencia",
         )
+        figure.update_layout(
+        title={
+            "text": "Embarcaciones con mayor reincidencia",
+            "x": 0.02,
+            "xanchor": "left",
+        },
+        height=520,
+        xaxis={
+            "title": "Fechas distintas con falta",
+            "rangemode": "tozero",
+            "dtick": 1,
+        },
+        yaxis={
+            "title": "",
+            "automargin": True,
+        },
+        showlegend=False,
+        margin={
+            "l": 125,
+            "r": 35,
+            "t": 70,
+            "b": 70,
+        },
+    )
 
-        return figure
+    return figure
+       
 
     # Buscar la columna que identifica a la embarcación.
     identifier_column = next(

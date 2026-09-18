@@ -485,8 +485,10 @@ if (
 
 
 with overview_tab:
+    # Primera fila
     left, right = st.columns(
-        [1.6, 1]
+        [1.6, 1],
+        gap="large",
     )
 
     with left:
@@ -496,7 +498,7 @@ with overview_tab:
                 filtered_recorridos,
                 start_date,
                 end_date,
-                ),
+            ),
             use_container_width=True,
         )
 
@@ -508,8 +510,11 @@ with overview_tab:
             use_container_width=True,
         )
 
-        left, right = st.columns(
-        [1.35, 1]
+    # Segunda fila
+    # IMPORTANTE: debe estar fuera de "with right:"
+    left, right = st.columns(
+        [1.6, 1],
+        gap="large",
     )
 
     with left:
