@@ -49,30 +49,15 @@ def calculate_kpis(supervisions: pd.DataFrame, recorridos: pd.DataFrame | None =
 def build_monthly_trend(
     supervisions: pd.DataFrame,
     recorridos: pd.DataFrame,
+    start_date,
+    end_date,
 ):
-    """Genera la evolución mensual de supervisiones y faltas."""
+    """Genera una evolución diaria, mensual o anual según el periodo."""
 
     data = supervisions.copy()
 
-    if data.empty:
-        figure = go.Figure()
-
-        figure.add_annotation(
-            text="No hay información para el periodo seleccionado",
-            x=0.5,
-            y=0.5,
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-        )
-
-        figure.update_layout(
-            title="Evolución mensual",
-            xaxis_title="Mes",
-            yaxis_title="Registros",
-        )
-
-        return figure
+    start = pd.Timestamp(start_date).normalize()
+    end = pd.Timestamp(end_date).normalize()
 
     data["fecha"] = pd.to_datetime(
         data["fecha"],
@@ -88,38 +73,135 @@ def build_monthly_trend(
         subset=["fecha"]
     )
 
-    # El mes se convierte en texto para evitar que Plotly
-    # muestre horas cuando solamente existe un periodo.
-    data["mes"] = (
-        data["fecha"]
-        .dt.to_period("M")
-        .astype(str)
+    number_of_months = (
+        (end.year - start.year) * 12
+        + end.month
+        - start.month
+        + 1
     )
 
-    monthly = (
-        data.groupby(
-            "mes",
-            as_index=False,
-        )
-        .agg(
-            supervisiones=(
-                "supervision_id",
-                "nunique",
-            ),
-            faltas=(
-                "num_faltas",
-                "sum",
-            ),
-        )
-        .sort_values("mes")
+    same_month = (
+        start.year == end.year
+        and start.month == end.month
     )
+
+    # Un solo mes: agrupación por día.
+    if same_month:
+        chart_title = "Evolución diaria"
+        x_axis_title = "Día"
+
+        period_index = pd.date_range(
+            start=start,
+            end=end,
+            freq="D",
+            name="periodo",
+        )
+
+        data["periodo"] = (
+            data["fecha"].dt.normalize()
+        )
+
+        labels = period_index.strftime(
+            "%d/%m"
+        ).tolist()
+
+    # Entre 2 y 24 meses: agrupación mensual.
+    elif number_of_months <= 24:
+        frequency = "M"
+        chart_title = "Evolución mensual"
+        x_axis_title = "Mes"
+
+        period_index = pd.period_range(
+            start=start,
+            end=end,
+            freq="M",
+            name="periodo",
+        )
+
+        data["periodo"] = (
+            data["fecha"].dt.to_period("M")
+        )
+
+        month_names = [
+            "Ene",
+            "Feb",
+            "Mar",
+            "Abr",
+            "May",
+            "Jun",
+            "Jul",
+            "Ago",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dic",
+        ]
+
+        labels = [
+            f"{month_names[period.month - 1]} "
+            f"{period.year}"
+            for period in period_index
+        ]
+
+    # Más de 24 meses: agrupación anual.
+    else:
+        frequency = "Y"
+        chart_title = "Evolución anual"
+        x_axis_title = "Año"
+
+        period_index = pd.period_range(
+            start=start,
+            end=end,
+            freq="Y",
+            name="periodo",
+        )
+
+        data["periodo"] = (
+            data["fecha"].dt.to_period("Y")
+        )
+
+        labels = [
+            str(period.year)
+            for period in period_index
+        ]
+
+    if data.empty:
+        summary = pd.DataFrame(
+            {
+                "supervisiones": 0,
+                "incidencias": 0,
+            },
+            index=period_index,
+        )
+
+    else:
+        summary = (
+            data.groupby("periodo")
+            .agg(
+                supervisiones=(
+                    "supervision_id",
+                    "nunique",
+                ),
+                incidencias=(
+                    "num_faltas",
+                    "sum",
+                ),
+            )
+            .reindex(
+                period_index,
+                fill_value=0,
+            )
+        )
+
+    summary = summary.reset_index()
+    summary["etiqueta"] = labels
 
     figure = go.Figure()
 
     figure.add_trace(
         go.Scatter(
-            x=monthly["mes"],
-            y=monthly["supervisiones"],
+            x=summary["etiqueta"],
+            y=summary["supervisiones"],
             mode="lines+markers",
             name="Supervisiones",
             line={
@@ -127,42 +209,45 @@ def build_monthly_trend(
                 "width": 3,
             },
             marker={
-                "size": 9,
+                "size": 8,
             },
             hovertemplate=(
-                "Mes: %{x}<br>"
-                "Supervisiones: %{y}<extra></extra>"
+                f"{x_axis_title}: %{{x}}<br>"
+                "Supervisiones: %{y}"
+                "<extra></extra>"
             ),
         )
     )
 
     figure.add_trace(
         go.Scatter(
-            x=monthly["mes"],
-            y=monthly["faltas"],
+            x=summary["etiqueta"],
+            y=summary["incidencias"],
             mode="lines+markers",
-            name="Faltas",
+            name="Incidencias",
             line={
                 "color": "#D9A321",
                 "width": 3,
             },
             marker={
-                "size": 9,
+                "size": 8,
             },
             hovertemplate=(
-                "Mes: %{x}<br>"
-                "Faltas: %{y}<extra></extra>"
+                f"{x_axis_title}: %{{x}}<br>"
+                "Incidencias: %{y}"
+                "<extra></extra>"
             ),
         )
     )
 
     figure.update_layout(
-        title="Evolución mensual",
+        title=chart_title,
+        hovermode="x unified",
         xaxis={
-            "title": "Mes",
+            "title": x_axis_title,
             "type": "category",
             "categoryorder": "array",
-            "categoryarray": monthly["mes"].tolist(),
+            "categoryarray": labels,
             "tickangle": -45,
         },
         yaxis={
@@ -170,7 +255,6 @@ def build_monthly_trend(
             "rangemode": "tozero",
             "tickformat": ",d",
         },
-        hovermode="x unified",
         legend={
             "orientation": "h",
             "yanchor": "bottom",
@@ -182,7 +266,7 @@ def build_monthly_trend(
             "l": 40,
             "r": 20,
             "t": 70,
-            "b": 60,
+            "b": 70,
         },
     )
 

@@ -494,7 +494,9 @@ with overview_tab:
             build_monthly_trend(
                 filtered_supervisions,
                 filtered_recorridos,
-            ),
+                start_date,
+                end_date,
+                ),
             use_container_width=True,
         )
 
