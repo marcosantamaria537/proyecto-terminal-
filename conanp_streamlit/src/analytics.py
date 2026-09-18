@@ -310,16 +310,21 @@ def build_measure_chart(data: pd.DataFrame) -> go.Figure:
 def build_recurrence_chart(
     data: pd.DataFrame,
 ) -> go.Figure:
-    """
-    Muestra las embarcaciones que registraron faltas
-    en dos o más fechas diferentes.
-    """
+    """Muestra embarcaciones con faltas en fechas distintas."""
 
     figure = go.Figure()
 
-    if data.empty:
+    required_columns = {
+        "embarcacion_anonima",
+        "fecha",
+        "es_falta",
+        "supervision_id",
+        "num_faltas",
+    }
+
+    if data.empty or not required_columns.issubset(data.columns):
         figure.add_annotation(
-            text="No hay supervisiones en el periodo seleccionado",
+            text="No hay información de reincidencia disponible",
             x=0.5,
             y=0.5,
             xref="paper",
@@ -329,75 +334,16 @@ def build_recurrence_chart(
 
         figure.update_layout(
             title="Embarcaciones con mayor reincidencia",
-        )
-        figure.update_layout(
-        title={
-            "text": "Embarcaciones con mayor reincidencia",
-            "x": 0.02,
-            "xanchor": "left",
-        },
-        height=520,
-        xaxis={
-            "title": "Fechas distintas con falta",
-            "rangemode": "tozero",
-            "dtick": 1,
-        },
-        yaxis={
-            "title": "",
-            "automargin": True,
-        },
-        showlegend=False,
-        margin={
-            "l": 125,
-            "r": 35,
-            "t": 70,
-            "b": 70,
-        },
-    )
-
-    return figure
-       
-
-    # Buscar la columna que identifica a la embarcación.
-    identifier_column = next(
-        (
-            column
-            for column in [
-                "embarcacion_anonima",
-                "matricula",
-                "embarcacion",
-            ]
-            if column in data.columns
-        ),
-        None,
-    )
-
-    if identifier_column is None:
-        figure.add_annotation(
-            text=(
-                "No se encontró una columna para identificar "
-                "las embarcaciones"
-            ),
-            x=0.5,
-            y=0.5,
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-        )
-
-        figure.update_layout(
-            title="Embarcaciones con mayor reincidencia",
+            height=520,
+            xaxis={"visible": False},
+            yaxis={"visible": False},
         )
 
         return figure
 
-    faults = data.copy()
-
-    # Conservar únicamente supervisiones con falta.
-    if "es_falta" in faults.columns:
-        faults = faults[
-            faults["es_falta"].fillna(False)
-        ]
+    faults = data[
+        data["es_falta"].fillna(False)
+    ].copy()
 
     faults["fecha"] = pd.to_datetime(
         faults["fecha"],
@@ -409,9 +355,8 @@ def build_recurrence_chart(
         errors="coerce",
     ).fillna(0)
 
-    # Normalizar el identificador de la embarcación.
     faults["embarcacion_id"] = (
-        faults[identifier_column]
+        faults["embarcacion_anonima"]
         .astype(str)
         .str.replace("\u00a0", " ", regex=False)
         .str.strip()
@@ -428,9 +373,9 @@ def build_recurrence_chart(
         "NAN",
         "NONE",
         "N/A",
-        "NA",
         "SIN DATO",
         "SIN DATOS",
+        "SIN REGISTRO",
         "NO IDENTIFICADA",
         "NO IDENTIFICADO",
         "DESCONOCIDA",
@@ -444,25 +389,6 @@ def build_recurrence_chart(
     ].dropna(
         subset=["fecha"]
     )
-
-    if faults.empty:
-        figure.add_annotation(
-            text=(
-                "No hay embarcaciones identificadas "
-                "con faltas en este periodo"
-            ),
-            x=0.5,
-            y=0.5,
-            xref="paper",
-            yref="paper",
-            showarrow=False,
-        )
-
-        figure.update_layout(
-            title="Embarcaciones con mayor reincidencia",
-        )
-
-        return figure
 
     faults["fecha_dia"] = (
         faults["fecha"].dt.normalize()
@@ -493,8 +419,7 @@ def build_recurrence_chart(
         )
     )
 
-    # Una embarcación es reincidente cuando aparece
-    # con faltas en dos o más fechas distintas.
+    # Reincidencia: faltas en dos o más fechas diferentes.
     recurrence = recurrence[
         recurrence["fechas_con_falta"] >= 2
     ]
@@ -514,13 +439,13 @@ def build_recurrence_chart(
 
         figure.update_layout(
             title="Embarcaciones con mayor reincidencia",
+            height=520,
             xaxis={"visible": False},
             yaxis={"visible": False},
         )
 
         return figure
 
-    # Mostrar las diez embarcaciones con mayor reincidencia.
     recurrence = (
         recurrence.sort_values(
             [
@@ -589,7 +514,12 @@ def build_recurrence_chart(
     )
 
     figure.update_layout(
-        title="Embarcaciones con mayor reincidencia",
+        title={
+            "text": "Embarcaciones con mayor reincidencia",
+            "x": 0.02,
+            "xanchor": "left",
+        },
+        height=520,
         xaxis={
             "title": "Fechas distintas con falta",
             "rangemode": "tozero",
@@ -597,13 +527,14 @@ def build_recurrence_chart(
         },
         yaxis={
             "title": "",
+            "automargin": True,
         },
         showlegend=False,
         margin={
-            "l": 150,
-            "r": 40,
-            "t": 60,
-            "b": 50,
+            "l": 125,
+            "r": 35,
+            "t": 70,
+            "b": 70,
         },
     )
 
