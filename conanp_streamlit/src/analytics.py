@@ -46,20 +46,147 @@ def calculate_kpis(supervisions: pd.DataFrame, recorridos: pd.DataFrame | None =
     }
 
 
-def build_monthly_trend(supervisions: pd.DataFrame, recorridos: pd.DataFrame | None = None) -> go.Figure:
-    monthly = supervisions.groupby("mes", as_index=False).agg(
-        supervisiones=("supervision_id", "nunique"), faltas=("num_faltas", "sum")
+def build_monthly_trend(
+    supervisions: pd.DataFrame,
+    recorridos: pd.DataFrame,
+):
+    """Genera la evolución mensual de supervisiones y faltas."""
+
+    data = supervisions.copy()
+
+    if data.empty:
+        figure = go.Figure()
+
+        figure.add_annotation(
+            text="No hay información para el periodo seleccionado",
+            x=0.5,
+            y=0.5,
+            xref="paper",
+            yref="paper",
+            showarrow=False,
+        )
+
+        figure.update_layout(
+            title="Evolución mensual",
+            xaxis_title="Mes",
+            yaxis_title="Registros",
+        )
+
+        return figure
+
+    data["fecha"] = pd.to_datetime(
+        data["fecha"],
+        errors="coerce",
     )
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=monthly["mes"], y=monthly["supervisiones"], mode="lines", name="Supervisiones", line={"color": TEAL, "width": 3}))
-    fig.add_trace(go.Scatter(x=monthly["mes"], y=monthly["faltas"], mode="lines", name="Faltas", line={"color": GOLD, "width": 3}))
-    if recorridos is not None and not recorridos.empty:
-        monthly_recorridos = recorridos.groupby("mes")["recorrido_id"].nunique()
-        fig.add_trace(go.Scatter(x=monthly_recorridos.index, y=monthly_recorridos.values, mode="lines", name="Recorridos", line={"color": GREEN, "width": 3, "dash": "dot"}))
-    fig.update_layout(legend={"orientation": "h", "y": 1.12, "x": 1, "xanchor": "right"})
-    fig.update_xaxes(title=None)
-    fig.update_yaxes(title="Registros")
-    return _style(fig, "Evolución mensual")
+
+    data["num_faltas"] = pd.to_numeric(
+        data["num_faltas"],
+        errors="coerce",
+    ).fillna(0)
+
+    data = data.dropna(
+        subset=["fecha"]
+    )
+
+    # El mes se convierte en texto para evitar que Plotly
+    # muestre horas cuando solamente existe un periodo.
+    data["mes"] = (
+        data["fecha"]
+        .dt.to_period("M")
+        .astype(str)
+    )
+
+    monthly = (
+        data.groupby(
+            "mes",
+            as_index=False,
+        )
+        .agg(
+            supervisiones=(
+                "supervision_id",
+                "nunique",
+            ),
+            faltas=(
+                "num_faltas",
+                "sum",
+            ),
+        )
+        .sort_values("mes")
+    )
+
+    figure = go.Figure()
+
+    figure.add_trace(
+        go.Scatter(
+            x=monthly["mes"],
+            y=monthly["supervisiones"],
+            mode="lines+markers",
+            name="Supervisiones",
+            line={
+                "color": "#00866A",
+                "width": 3,
+            },
+            marker={
+                "size": 9,
+            },
+            hovertemplate=(
+                "Mes: %{x}<br>"
+                "Supervisiones: %{y}<extra></extra>"
+            ),
+        )
+    )
+
+    figure.add_trace(
+        go.Scatter(
+            x=monthly["mes"],
+            y=monthly["faltas"],
+            mode="lines+markers",
+            name="Faltas",
+            line={
+                "color": "#D9A321",
+                "width": 3,
+            },
+            marker={
+                "size": 9,
+            },
+            hovertemplate=(
+                "Mes: %{x}<br>"
+                "Faltas: %{y}<extra></extra>"
+            ),
+        )
+    )
+
+    figure.update_layout(
+        title="Evolución mensual",
+        xaxis={
+            "title": "Mes",
+            "type": "category",
+            "categoryorder": "array",
+            "categoryarray": monthly["mes"].tolist(),
+            "tickangle": -45,
+        },
+        yaxis={
+            "title": "Registros",
+            "rangemode": "tozero",
+            "tickformat": ",d",
+        },
+        hovermode="x unified",
+        legend={
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "xanchor": "right",
+            "x": 1,
+        },
+        margin={
+            "l": 40,
+            "r": 20,
+            "t": 70,
+            "b": 60,
+        },
+    )
+
+    return figure
 
 
 def build_fault_type_chart(data: pd.DataFrame) -> go.Figure:
