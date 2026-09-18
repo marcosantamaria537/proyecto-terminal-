@@ -524,7 +524,10 @@ def build_recurrence_chart(
         xaxis={
             "title": "Fechas distintas con falta",
             "rangemode": "tozero",
-            "dtick": 1,
+            "tickmode": "auto",
+            "nticks": 8,
+            "tickformat": "d",
+            "automargin": True,
         },
         yaxis={
             "title": "",
