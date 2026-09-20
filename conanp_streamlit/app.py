@@ -422,12 +422,18 @@ with header_left:
     )
 
 with header_right:
-    st.markdown(
-        '<div class="brand-mark">'
-        "CONANP"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    logo_path = ROOT / "assets" / "conanp_logo.png"
+
+    if logo_path.exists():
+        st.image(
+            str(logo_path),
+            width=150,
+        )
+    else:
+        st.markdown(
+            '<div class="brand-mark">CONANP</div>',
+            unsafe_allow_html=True,
+        )
 
 
 kpis = calculate_kpis(
