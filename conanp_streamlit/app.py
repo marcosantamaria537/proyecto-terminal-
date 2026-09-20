@@ -399,9 +399,7 @@ if selected_faults:
     )
 
 
-header_left, header_right = st.columns(
-    [5, 1]
-)
+header_left, header_right = st.columns([4, 1.5])
 
 with header_left:
     st.markdown(
@@ -427,14 +425,8 @@ with header_right:
     if logo_path.exists():
         st.image(
             str(logo_path),
-            width=150,
+            width=220,
         )
-    else:
-        st.markdown(
-            '<div class="brand-mark">CONANP</div>',
-            unsafe_allow_html=True,
-        )
-
 
 kpis = calculate_kpis(
     filtered_supervisions,
