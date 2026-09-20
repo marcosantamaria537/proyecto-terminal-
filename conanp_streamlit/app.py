@@ -399,7 +399,7 @@ if selected_faults:
     )
 
 
-header_left, header_right = st.columns([4, 1.5])
+header_left, header_right = st.columns([5, 1])
 
 with header_left:
     st.markdown(
