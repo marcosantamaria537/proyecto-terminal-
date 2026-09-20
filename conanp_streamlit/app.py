@@ -425,7 +425,7 @@ with header_right:
     if logo_path.exists():
         st.image(
             str(logo_path),
-            width=200,
+            width=220,
         )
 
 kpis = calculate_kpis(
