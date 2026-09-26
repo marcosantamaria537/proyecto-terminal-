@@ -15,6 +15,7 @@ from src.analytics import (
     calculate_kpis,
 )
 from src.data import load_geojson_bytes, normalize_name, quality_summary
+from src.etl_view import render_etl_tab
 from src.map_view import render_surveillance_map
 from src.postgres_data import (
     DatabaseLoadError,
@@ -472,12 +473,14 @@ if (
     spatial_tab,
     records_tab,
     quality_tab,
+    etl_tab,
 ) = st.tabs(
     [
         "Resumen",
         "Análisis espacial",
         "Registros",
         "Calidad de datos",
+        "Carga ETL",
     ]
 )
 
@@ -918,6 +921,10 @@ with quality_tab:
         use_container_width=True,
         hide_index=True,
     )
+
+
+with etl_tab:
+    render_etl_tab(connection)
 
 
 st.caption(
