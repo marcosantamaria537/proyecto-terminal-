@@ -33,7 +33,6 @@ DEFAULT_GEOJSON_PATH = (
 
 st.set_page_config(
     page_title="Vigilancia CONANP",
-    page_icon="🌊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
